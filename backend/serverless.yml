@@ -1,0 +1,46 @@
+
+service: serverless-appsync-backend
+
+frameworkVersion: "3"
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  stage: dev
+  region: eu-west-1
+
+
+plugins:
+   - serverless-appsync-plugin
+
+custom:
+  appSync:
+    name: youtubeAppSyncApi
+    authenticationType: AMAZON_COGNITO_USER_POOLS
+    additionalAuthenticationProviders:
+      - authenticationType: AWS_IAM #this will be so that we give unauthenticated guest users an IAM role
+    userPoolConfig:
+      awsRegion: ${self:provider.region}
+      defaultAction: ALLOW
+      userPoolId: !Ref cognitoUserPool
+    mappingTemplatesLocation: mapping-templates
+    mappingTemplates: 
+      - type: Query 
+        field: getBookById
+        dataSource: booksTable
+      - type: Query 
+        field: listBooks
+        dataSource: booksTable
+      - type: Mutation 
+        field: createBook
+        dataSource: booksTable
+    dataSources:
+      - type: AMAZON_DYNAMODB
+        name: booksTable
+        config: 
+          tableName: !Ref booksTable
+
+
+resources:
+ Resources:
+  ${file(resources.yml)}

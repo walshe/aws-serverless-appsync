@@ -1,0 +1,67 @@
+schema {
+    query: Query,
+    mutation: Mutation
+    subscription: Subscription
+}
+
+
+type Subscription{
+    onCreateBook : Book @aws_subscribe(mutations: ["createBook"]) #create subscription on createBook mutation, there is to mapping template are we are sending to all conencted clients
+}
+
+type Query {
+    getBookById(bookId: ID!): Book! @aws_iam  #this tells it to use IAM authentication instead of cognito authentication so that guest users can be associated with a rule
+    listBooks(limit: Int!, nextToken: String): BooksPage!
+    myOrders(limit: Int!, nextToken: String): orderItemsPage!
+}
+
+type orderItemsPage {
+    orderItems: [OrderItem]
+    nextToken: String
+}
+
+type OrderItem {
+    userId: ID!
+    orderId: ID!
+    book: Book!
+    quantity: Int! 
+}
+
+type BooksPage {
+    books: [Book]
+    nextToken: String
+}
+
+#here we can if we want put @iam_user (i.e. unauthenticated guest user) only on the fields that we want a guest user to see
+type Book @aws_iam @aws_cognito_user_pools	{
+    bookId: ID! 
+    title: String!
+    description: String
+    imageUrl: AWSURL
+    author: String!
+    price: Float!
+    createdAt: AWSDateTime
+    updatedAt: AWSDateTime
+}
+
+type Mutation {
+    createBook(newBook: BookInput): Book! @aws_auth(cognito_groups: ["admin"])
+    createOrder(newOrder: OrderInput): Boolean!
+}
+
+input OrderInput {
+    items: [orderItemInput]
+}
+
+input orderItemInput {
+    bookId: ID!
+    quantity: Int!
+}
+
+input BookInput {
+    title: String!
+    description: String
+    imageUrl: AWSURL
+    author: String!
+    price: Float!
+}
